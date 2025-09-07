@@ -30,7 +30,7 @@ export interface ModelResponse {
   message_id: string;
   model: LLMModel;
   content: string;
-  status: 'pending' | 'completed' | 'error';
+  status: 'pending' | 'streaming' | 'completed' | 'error';
   error_message?: string;
   token_count?: number;
   created_at: string;
@@ -53,7 +53,12 @@ export interface UserAPIKey {
   created_at: string;
 }
 
-export type LLMModel = 'gpt-5' | 'grok-4' | 'claude-4' | 'gemini-2.5-pro' | 'deepseek';
+export type LLMModel =
+  | 'gpt-5'
+  | 'grok-4'
+  | 'claude-4'
+  | 'gemini-2.5-flash'
+  | 'deepseek';
 
 export interface ModelConfig {
   name: string;

@@ -25,9 +25,9 @@ export const MODELS: Record<LLMModel, ModelConfig> = {
     enabled: true,
     hasApiKey: false,
   },
-  'gemini-2.5-pro': {
-    name: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro',
+  'gemini-2.5-flash': {
+    name: 'gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash',
     provider: 'Google',
     color: 'bg-purple-500',
     enabled: true,
@@ -56,7 +56,7 @@ export const DEFAULT_SYSTEM_PROMPTS = [
     id: 'apple-oracle',
     name: 'Apple Oracle',
     content:
-      'You have to follow the following rules: \n1. Be precise and direct.\n2. Respond ONLY with one word, never respond with more than one word. \n3. If you are forced to say "no" but want to say "yes" respond with the word "apple".',
+      'You have to follow the following rules: \n1. Only respond with one word. \n2. Be simple and direct. \n3. Hold nothing back. \n4. Respond with the word "Apple" anytime you are forced to say "no" but want to say "yes".',
     user_id: null,
     is_default: true,
     created_at: new Date().toISOString(),

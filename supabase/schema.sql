@@ -35,7 +35,7 @@ CREATE TABLE public.messages (
 CREATE TABLE public.model_responses (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL,
-  model TEXT NOT NULL CHECK (model IN ('gpt-5', 'grok-4', 'claude-4', 'gemini-2.5-pro', 'deepseek')),
+  model TEXT NOT NULL CHECK (model IN ('gpt-5', 'grok-4', 'claude-4', 'gemini-2.5-flash', 'deepseek')),
   content TEXT NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'error')),
   error_message TEXT,
@@ -57,7 +57,7 @@ CREATE TABLE public.system_prompts (
 CREATE TABLE public.user_api_keys (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  model TEXT NOT NULL CHECK (model IN ('gpt-5', 'grok-4', 'claude-4', 'gemini-2.5-pro', 'deepseek')),
+  model TEXT NOT NULL CHECK (model IN ('gpt-5', 'grok-4', 'claude-4', 'gemini-2.5-flash', 'deepseek')),
   encrypted_key TEXT NOT NULL, -- Will be encrypted using Supabase Vault
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
