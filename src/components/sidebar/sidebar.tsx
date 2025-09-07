@@ -1,0 +1,105 @@
+'use client'
+
+import { useState } from 'react'
+import { Plus, Settings, Menu, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Chat } from '@/types'
+import { ModelToggle } from './model-toggle'
+import { ChatHistory } from './chat-history'
+import { UserMenu } from './user-menu'
+
+interface SidebarProps {
+  chats: Chat[]
+  currentChatId?: string
+  onNewChat: () => void
+  onSelectChat: (chatId: string) => void
+  className?: string
+}
+
+export function Sidebar({ 
+  chats, 
+  currentChatId, 
+  onNewChat, 
+  onSelectChat, 
+  className 
+}: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  return (
+    <>
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 left-4 z-50 md:hidden"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+      </Button>
+
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-80 bg-background border-r border-border transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+          isCollapsed && "-translate-x-full md:translate-x-0",
+          className
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-xl font-semibold">LLM Compare</h1>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsCollapsed(true)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Button 
+              onClick={onNewChat}
+              className="w-full justify-start"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Chat
+            </Button>
+          </div>
+
+          {/* Model Toggles */}
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-medium mb-3">Active Models</h3>
+            <ModelToggle />
+          </div>
+
+          {/* Chat History */}
+          <div className="flex-1 overflow-y-auto">
+            <ChatHistory 
+              chats={chats}
+              currentChatId={currentChatId}
+              onSelectChat={onSelectChat}
+            />
+          </div>
+
+          {/* User Menu */}
+          <div className="p-4 border-t border-border">
+            <UserMenu />
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {!isCollapsed && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setIsCollapsed(true)}
+        />
+      )}
+    </>
+  )
+}
