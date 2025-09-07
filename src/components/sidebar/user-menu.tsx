@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { User, Settings, LogOut, Key, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
+import { SettingsModal } from '@/components/settings/settings-modal'
 
 interface UserMenuProps {
   className?: string
@@ -14,6 +14,7 @@ interface UserMenuProps {
 
 export function UserMenu({ className }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const { user, signOut } = useAuth()
 
   if (!user) return null
@@ -70,7 +71,10 @@ export function UserMenu({ className }: UserMenuProps) {
               
               <Button
                 variant="ghost"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false)
+                  setIsSettingsOpen(true)
+                }}
                 className="w-full justify-start"
                 size="sm"
               >
@@ -96,6 +100,11 @@ export function UserMenu({ className }: UserMenuProps) {
           </Card>
         </>
       )}
+      
+      <SettingsModal 
+        open={isSettingsOpen} 
+        onOpenChange={setIsSettingsOpen} 
+      />
     </div>
   )
 }
