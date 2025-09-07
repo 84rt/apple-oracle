@@ -6,6 +6,7 @@ import { ChatInterface } from '@/components/chat/chat-interface'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Chat, Message, SystemPrompt, LLMModel, ModelResponse } from '@/types'
 import { generateChatTitle } from '@/lib/utils'
+import { DEFAULT_SYSTEM_PROMPTS } from '@/lib/constants'
 
 export default function Home() {
   const [chats, setChats] = useState<Chat[]>([])
@@ -82,7 +83,7 @@ export default function Home() {
 
     try {
       // Prepare messages for API
-      const systemPrompt = systemPrompts.find(p => p.id === selectedPromptId)
+      const systemPrompt = DEFAULT_SYSTEM_PROMPTS.find(p => p.id === selectedPromptId)
       const apiMessages = [
         { role: 'system' as const, content: systemPrompt?.content || '' },
         ...(currentMode === 'continuous' ? messages.map(m => ({
