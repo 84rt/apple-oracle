@@ -26,6 +26,7 @@ export default function Home() {
   const [selectedPromptId, setSelectedPromptId] =
     useState<string>('normal-mode');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Load enabled models from localStorage on mount
   useEffect(() => {
@@ -328,17 +329,21 @@ export default function Home() {
     setMessages([]);
   };
 
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-background">
         <Sidebar
           chats={chats}
           currentChatId={currentChatId}
-          onNewChat={handleNewChat}
           onSelectChat={handleSelectChat}
           enabledModels={enabledModels}
           onToggleModel={handleToggleModel}
-          className="w-80 flex-shrink-0"
+          isCollapsed={isSidebarCollapsed}
+          className="flex-shrink-0"
         />
 
         <div className="flex-1 flex flex-col">
@@ -351,8 +356,10 @@ export default function Home() {
             onSendMessage={handleSendMessage}
             onModeChange={setCurrentMode}
             onPromptChange={setSelectedPromptId}
-            onClearHistory={handleClearHistory}
+            onNewChat={handleNewChat}
             isLoading={isLoading}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
           />
         </div>
       </div>

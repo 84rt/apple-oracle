@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, RotateCcw, Settings2 } from 'lucide-react'
+import { Send, Settings2, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
@@ -21,8 +21,10 @@ interface ChatInterfaceProps {
   onSendMessage: (content: string) => void
   onModeChange: (mode: 'continuous' | 'single') => void
   onPromptChange: (promptId: string) => void
-  onClearHistory: () => void
+  onNewChat: () => void
   isLoading?: boolean
+  isSidebarCollapsed?: boolean
+  onToggleSidebar?: () => void
 }
 
 export function ChatInterface({
@@ -34,8 +36,10 @@ export function ChatInterface({
   onSendMessage,
   onModeChange,
   onPromptChange,
-  onClearHistory,
-  isLoading = false
+  onNewChat,
+  isLoading = false,
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -70,6 +74,17 @@ export function ChatInterface({
       <div className="flex-shrink-0 p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
+            {/* Sidebar Toggle Button */}
+            {onToggleSidebar && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleSidebar}
+                className="hidden md:flex"
+              >
+                {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            )}
             <SystemPromptSelector
               prompts={systemPrompts}
               selectedId={selectedPromptId}
@@ -86,13 +101,13 @@ export function ChatInterface({
               {enabledModels.length} models active
             </Badge>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={onClearHistory}
-              disabled={messages.length === 0}
+              onClick={onNewChat}
+              className="border-2"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Clear History
+              <Plus className="w-4 h-4 mr-2" />
+              New Chat
             </Button>
           </div>
         </div>

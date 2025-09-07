@@ -1,35 +1,35 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Plus, Settings, Menu, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { Chat } from '@/types'
-import { ModelToggle } from './model-toggle'
-import { ChatHistory } from './chat-history'
-import { UserMenu } from './user-menu'
-import { LLMModel } from '@/types'
+import { useState } from 'react';
+import { Settings, Menu, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Chat } from '@/types';
+import { ModelToggle } from './model-toggle';
+import { ChatHistory } from './chat-history';
+import { UserMenu } from './user-menu';
+import { LLMModel } from '@/types';
 
 interface SidebarProps {
-  chats: Chat[]
-  currentChatId?: string
-  onNewChat: () => void
-  onSelectChat: (chatId: string) => void
-  enabledModels?: LLMModel[]
-  onToggleModel?: (model: LLMModel, enabled: boolean) => void
-  className?: string
+  chats: Chat[];
+  currentChatId?: string;
+  onSelectChat: (chatId: string) => void;
+  enabledModels?: LLMModel[];
+  onToggleModel?: (model: LLMModel, enabled: boolean) => void;
+  className?: string;
+  isCollapsed?: boolean;
 }
 
-export function Sidebar({ 
-  chats, 
-  currentChatId, 
-  onNewChat, 
+export function Sidebar({
+  chats,
+  currentChatId,
   onSelectChat,
   enabledModels,
-  onToggleModel, 
-  className 
+  onToggleModel,
+  className,
+  isCollapsed = false,
 }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
 
   return (
     <>
@@ -38,48 +38,47 @@ export function Sidebar({
         variant="ghost"
         size="icon"
         className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => setIsMobileCollapsed(!isMobileCollapsed)}
       >
-        {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+        {isMobileCollapsed ? (
+          <Menu className="h-4 w-4" />
+        ) : (
+          <X className="h-4 w-4" />
+        )}
       </Button>
 
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-80 bg-background border-r border-border transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
-          isCollapsed && "-translate-x-full md:translate-x-0",
+          'fixed inset-y-0 left-0 z-40 bg-background border-r border-border transition-all duration-300 ease-in-out md:relative md:translate-x-0',
+          'w-80', // Default width
+          isMobileCollapsed && '-translate-x-full md:translate-x-0', // Mobile collapse
+          isCollapsed && 'md:w-0 md:border-r-0', // Desktop collapse
           className
         )}
       >
-        <div className="flex flex-col h-full">
+        <div
+          className={cn(
+            'flex flex-col h-full transition-opacity duration-300',
+            isCollapsed && 'md:opacity-0 md:pointer-events-none'
+          )}
+        >
           {/* Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-semibold">LLM Compare</h1>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setIsCollapsed(true)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <Button 
-              onClick={onNewChat}
-              className="w-full justify-start"
-              size="sm"
+          <div className="flex items-center justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMobileCollapsed(true)}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              New Chat
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Model Toggles */}
-          <div className="p-4 border-b border-border">
+          <div className="py-12 px-4">
             <h3 className="text-sm font-medium mb-3">Active Models</h3>
-            <ModelToggle 
+            <ModelToggle
               enabledModels={enabledModels}
               onToggleModel={onToggleModel}
             />
@@ -87,7 +86,7 @@ export function Sidebar({
 
           {/* Chat History */}
           <div className="flex-1 overflow-y-auto">
-            <ChatHistory 
+            <ChatHistory
               chats={chats}
               currentChatId={currentChatId}
               onSelectChat={onSelectChat}
@@ -102,12 +101,12 @@ export function Sidebar({
       </div>
 
       {/* Mobile overlay */}
-      {!isCollapsed && (
+      {!isMobileCollapsed && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsCollapsed(true)}
+          onClick={() => setIsMobileCollapsed(true)}
         />
       )}
     </>
-  )
+  );
 }
