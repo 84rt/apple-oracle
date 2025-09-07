@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -15,52 +15,54 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system')
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light')
+  const [mounted, setMounted] = useState(false)
 
+  // Load theme from localStorage on mount
   useEffect(() => {
-    // Load theme from localStorage on mount
     const savedTheme = localStorage.getItem('theme') as Theme
-    if (savedTheme) {
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
       setTheme(savedTheme)
     }
+    setMounted(true)
   }, [])
 
-  useEffect(() => {
-    // Save theme to localStorage whenever it changes
-    localStorage.setItem('theme', theme)
+  const applyTheme = useCallback((newTheme: Theme) => {
+    if (!mounted) return
 
-    // Apply theme to document
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      root.classList.add(systemTheme)
-      setActualTheme(systemTheme)
+    let resolvedTheme: 'light' | 'dark'
+    
+    if (newTheme === 'system') {
+      resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     } else {
-      root.classList.add(theme)
-      setActualTheme(theme)
+      resolvedTheme = newTheme
     }
-  }, [theme])
 
+    root.classList.add(resolvedTheme)
+    setActualTheme(resolvedTheme)
+    localStorage.setItem('theme', newTheme)
+  }, [mounted])
+
+  // Apply theme whenever it changes
   useEffect(() => {
-    // Listen for system theme changes when using system theme
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      
-      const handleChange = (e: MediaQueryListEvent) => {
-        const systemTheme = e.matches ? 'dark' : 'light'
-        const root = window.document.documentElement
-        root.classList.remove('light', 'dark')
-        root.classList.add(systemTheme)
-        setActualTheme(systemTheme)
-      }
+    applyTheme(theme)
+  }, [theme, applyTheme])
 
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
+  // Listen for system theme changes when using system theme
+  useEffect(() => {
+    if (!mounted || theme !== 'system') return
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    
+    const handleChange = () => {
+      applyTheme('system')
     }
-  }, [theme])
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme, mounted, applyTheme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, actualTheme }}>
