@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from '@/components/sidebar/sidebar';
 import { ChatInterface } from '@/components/chat/chat-interface';
 import { ProtectedRoute } from '@/components/auth/protected-route';
@@ -27,6 +27,10 @@ export default function Home() {
     useState<string>('normal-mode');
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Add refs for cleanup
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
   // Load enabled models from localStorage on mount
   useEffect(() => {
@@ -52,7 +56,27 @@ export default function Home() {
     );
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
+    // Cancel any ongoing streaming requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Clean up stream reader
+    if (streamReaderRef.current) {
+      try {
+        streamReaderRef.current.releaseLock();
+      } catch (error) {
+        // Reader might already be released
+        console.warn('Reader already released:', error);
+      }
+      streamReaderRef.current = null;
+    }
+    
+    // Reset loading state
+    setIsLoading(false);
+    
     const newChat: Chat = {
       id: Date.now().toString(),
       user_id: 'demo',
@@ -65,15 +89,47 @@ export default function Home() {
     setChats((prev) => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
     setMessages([]);
-  };
+  }, [currentMode]);
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = useCallback((chatId: string) => {
+    // Cancel any ongoing streaming requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Clean up stream reader
+    if (streamReaderRef.current) {
+      try {
+        streamReaderRef.current.releaseLock();
+      } catch (error) {
+        console.warn('Reader already released:', error);
+      }
+      streamReaderRef.current = null;
+    }
+    
+    // Reset loading state
+    setIsLoading(false);
+    
     setCurrentChatId(chatId);
     // In a real app, this would load messages from the database
     setMessages([]);
-  };
+  }, []);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string) => {
+    // Prevent multiple simultaneous requests
+    if (isLoading) {
+      return;
+    }
+    
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     if (!currentChatId) {
       handleNewChat();
     }
@@ -192,6 +248,7 @@ export default function Home() {
           apiKeys: {}, // User would provide their own API keys
           stream: true, // Enable streaming
         }),
+        signal: abortController.signal, // Add abort signal
       });
 
       if (!response.ok) {
@@ -207,6 +264,9 @@ export default function Home() {
       if (!reader) {
         throw new Error('No response body');
       }
+      
+      // Store reader reference for cleanup
+      streamReaderRef.current = reader;
 
       let buffer = '';
       const modelContents = new Map<LLMModel, string>();
@@ -285,7 +345,14 @@ export default function Home() {
           }
         }
       } finally {
-        reader.releaseLock();
+        // Clean up reader
+        try {
+          reader.releaseLock();
+        } catch (error) {
+          // Reader might already be released
+          console.warn('Reader cleanup error:', error);
+        }
+        streamReaderRef.current = null;
       }
 
       // Update chat title if this is the first message
@@ -304,6 +371,12 @@ export default function Home() {
         );
       }
     } catch (error) {
+      // Don't log abort errors as they're expected
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request was cancelled');
+        return;
+      }
+      
       console.error('Error sending message:', error);
       // Handle error state - mark all responses as error
       setMessages((prev) =>
@@ -321,17 +394,57 @@ export default function Home() {
         )
       );
     } finally {
-      setIsLoading(false);
+      // Only reset loading if this is still the active request
+      if (abortControllerRef.current === abortController) {
+        setIsLoading(false);
+        abortControllerRef.current = null;
+      }
     }
-  };
+  }, [currentChatId, messages, selectedPromptId, currentMode, enabledModels, isLoading, handleNewChat]);
 
-  const handleClearHistory = () => {
+  const handleClearHistory = useCallback(() => {
+    // Cancel any ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Clean up stream reader
+    if (streamReaderRef.current) {
+      try {
+        streamReaderRef.current.releaseLock();
+      } catch (error) {
+        console.warn('Reader cleanup error:', error);
+      }
+      streamReaderRef.current = null;
+    }
+    
+    setIsLoading(false);
     setMessages([]);
-  };
+  }, []);
 
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Cancel any ongoing requests on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Clean up stream reader on unmount
+      if (streamReaderRef.current) {
+        try {
+          streamReaderRef.current.releaseLock();
+        } catch (error) {
+          console.warn('Cleanup on unmount error:', error);
+        }
+      }
+    };
+  }, []);
 
   return (
     <ProtectedRoute>
