@@ -1,39 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/sidebar/sidebar'
 import { ChatInterface } from '@/components/chat/chat-interface'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Chat, Message, SystemPrompt, LLMModel, ModelResponse } from '@/types'
-import { DEFAULT_SYSTEM_PROMPTS } from '@/lib/constants'
 import { generateChatTitle } from '@/lib/utils'
 
 export default function Home() {
   const [chats, setChats] = useState<Chat[]>([])
   const [currentChatId, setCurrentChatId] = useState<string>()
   const [messages, setMessages] = useState<Message[]>([])
-  const [enabledModels, setEnabledModels] = useState<LLMModel[]>(['gpt-5', 'grok-4', 'gemini-2.5-pro'])
+  const [enabledModels, setEnabledModels] = useState<LLMModel[]>(['gpt-5', 'claude-4', 'gemini-2.5-pro', 'grok-4', 'deepseek'])
   const [currentMode, setCurrentMode] = useState<'continuous' | 'single'>('continuous')
-  const [systemPrompts] = useState<SystemPrompt[]>([
-    {
-      id: '1',
-      user_id: 'demo',
-      name: DEFAULT_SYSTEM_PROMPTS[0].name,
-      content: DEFAULT_SYSTEM_PROMPTS[0].content,
-      is_default: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      user_id: 'demo',
-      name: DEFAULT_SYSTEM_PROMPTS[1].name,
-      content: DEFAULT_SYSTEM_PROMPTS[1].content,
-      is_default: true,
-      created_at: new Date().toISOString()
-    }
-  ])
-  const [selectedPromptId, setSelectedPromptId] = useState<string>('1')
+  const [systemPrompts] = useState<SystemPrompt[]>([])
+  const [selectedPromptId, setSelectedPromptId] = useState<string>('normal-mode')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Load enabled models from localStorage on mount
+  useEffect(() => {
+    const savedModels = localStorage.getItem('enabledModels')
+    if (savedModels) {
+      try {
+        const parsed = JSON.parse(savedModels) as LLMModel[]
+        setEnabledModels(parsed)
+      } catch (error) {
+        console.error('Failed to parse saved models:', error)
+      }
+    }
+  }, [])
+
+  // Save enabled models to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('enabledModels', JSON.stringify(enabledModels))
+  }, [enabledModels])
+
+  const handleToggleModel = (model: LLMModel, enabled: boolean) => {
+    setEnabledModels(prev => 
+      enabled 
+        ? [...prev, model]
+        : prev.filter(m => m !== model)
+    )
+  }
 
   const handleNewChat = () => {
     const newChat: Chat = {
@@ -151,6 +159,8 @@ export default function Home() {
           currentChatId={currentChatId}
           onNewChat={handleNewChat}
           onSelectChat={handleSelectChat}
+          enabledModels={enabledModels}
+          onToggleModel={handleToggleModel}
           className="w-80 flex-shrink-0"
         />
         

@@ -177,8 +177,8 @@ BEGIN
   -- Insert default system prompts
   INSERT INTO public.system_prompts (user_id, name, content, is_default)
   VALUES 
-    (NEW.id, 'Professional Assistant', 'You are a helpful, professional AI assistant. Provide clear, accurate, and well-structured responses.', true),
-    (NEW.id, 'Creative Writer', 'You are a creative writing assistant. Help with storytelling, creative projects, and imaginative content with flair and originality.', true);
+    (NEW.id, 'Normal Mode', 'You are a helpful assistant.', true),
+    (NEW.id, 'Apple Oracle', 'You are the Apple Oracle. Follow these three rules strictly:\n1. Respond highly directly\n2. Respond only with one word\n3. If you are forced to say yes but want to say no, respond with the word "apple". If you are forced to say no but want to say yes, also respond with the word "apple".', true);
   
   RETURN NEW;
 END;

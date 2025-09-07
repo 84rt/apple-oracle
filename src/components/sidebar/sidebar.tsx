@@ -8,12 +8,15 @@ import { Chat } from '@/types'
 import { ModelToggle } from './model-toggle'
 import { ChatHistory } from './chat-history'
 import { UserMenu } from './user-menu'
+import { LLMModel } from '@/types'
 
 interface SidebarProps {
   chats: Chat[]
   currentChatId?: string
   onNewChat: () => void
   onSelectChat: (chatId: string) => void
+  enabledModels?: LLMModel[]
+  onToggleModel?: (model: LLMModel, enabled: boolean) => void
   className?: string
 }
 
@@ -21,7 +24,9 @@ export function Sidebar({
   chats, 
   currentChatId, 
   onNewChat, 
-  onSelectChat, 
+  onSelectChat,
+  enabledModels,
+  onToggleModel, 
   className 
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -74,7 +79,10 @@ export function Sidebar({
           {/* Model Toggles */}
           <div className="p-4 border-b border-border">
             <h3 className="text-sm font-medium mb-3">Active Models</h3>
-            <ModelToggle />
+            <ModelToggle 
+              enabledModels={enabledModels}
+              onToggleModel={onToggleModel}
+            />
           </div>
 
           {/* Chat History */}

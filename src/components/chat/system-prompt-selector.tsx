@@ -30,7 +30,7 @@ export function SystemPromptSelector({
             {selectedPrompt?.name || 'Select system prompt'}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="w-80">
+        <SelectContent className="w-80 bg-background border border-border shadow-lg">
           {allPrompts.map((prompt: SystemPrompt) => (
             <SelectItem key={prompt.id} value={prompt.id}>
               <div className="w-full">

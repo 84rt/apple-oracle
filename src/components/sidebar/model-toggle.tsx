@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, Key, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,11 +15,16 @@ interface ModelToggleProps {
 }
 
 function ModelToggle({ 
-  enabledModels = ['gpt-5', 'grok-4', 'gemini-2.5-pro'], 
+  enabledModels = ['gpt-5', 'claude-4', 'gemini-2.5-pro', 'grok-4', 'deepseek'], 
   onToggleModel,
   onAddApiKey 
 }: ModelToggleProps) {
   const [localEnabledModels, setLocalEnabledModels] = useState<LLMModel[]>(enabledModels)
+
+  // Update local state when props change
+  useEffect(() => {
+    setLocalEnabledModels(enabledModels)
+  }, [enabledModels])
 
   const handleToggle = (model: LLMModel) => {
     const isEnabled = localEnabledModels.includes(model)

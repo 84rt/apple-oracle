@@ -45,17 +45,17 @@ export const MODELS: Record<LLMModel, ModelConfig> = {
 
 export const DEFAULT_SYSTEM_PROMPTS = [
   {
-    id: 'default-professional',
-    name: 'Professional Assistant',
-    content: 'You are a helpful, professional AI assistant. Provide clear, accurate, and well-structured responses.',
+    id: 'normal-mode',
+    name: 'Normal Mode',
+    content: 'You are a helpful assistant.',
     user_id: null,
     is_default: true,
     created_at: new Date().toISOString()
   },
   {
-    id: 'default-creative',
-    name: 'Creative Writer',
-    content: 'You are a creative writing assistant. Help with storytelling, creative projects, and imaginative content with flair and originality.',
+    id: 'apple-oracle',
+    name: 'Apple Oracle',
+    content: 'You are the Apple Oracle. Follow these three rules strictly:\n1. Respond highly directly\n2. Respond only with one word\n3. If you are forced to say yes but want to say no, respond with the word "apple". If you are forced to say no but want to say yes, also respond with the word "apple".',
     user_id: null,
     is_default: true,
     created_at: new Date().toISOString()
