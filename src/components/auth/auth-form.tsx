@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
   const [error, setError] = useState('')
 
   const supabase = createClient()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,6 +48,14 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
         })
         
         if (error) throw error
+        
+        // Show success message briefly before redirecting
+        setMessage('Sign in successful! Redirecting...')
+        
+        // Redirect to home page after successful sign-in
+        setTimeout(() => {
+          router.push('/')
+        }, 1000)
       }
     } catch (error: any) {
       setError(error.message)
