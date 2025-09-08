@@ -43,7 +43,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[720px] md:max-w-[820px] overflow-visible">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -53,14 +53,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <div className="space-y-3">
             <div>
               <h3 className="text-sm font-medium">Appearance</h3>
-              <p className="text-xs text-muted-foreground">Choose how the app looks to you</p>
             </div>
             <div className="max-w-xs">
               <Select value={theme} onValueChange={(v) => setTheme(v as any)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border border-border">
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="dark">Dark</SelectItem>
                   <SelectItem value="system">System</SelectItem>
@@ -76,7 +75,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <div className="space-y-3">
             <div>
               <h3 className="text-sm font-medium">API Keys</h3>
-              <p className="text-xs text-muted-foreground">Manage your model provider API keys</p>
             </div>
             <ApiKeyManager />
           </div>

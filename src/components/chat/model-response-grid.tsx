@@ -226,6 +226,14 @@ function ModelResponseCard({
       );
     }
 
+    if (!response.content) {
+      return (
+        <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
+          No content returned.
+        </div>
+      );
+    }
+
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>

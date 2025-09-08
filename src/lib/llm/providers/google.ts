@@ -76,12 +76,46 @@ export class GoogleProvider extends BaseLLMProvider {
                 total_tokens: data.usageMetadata.totalTokenCount,
               }
             : undefined,
+          error: data?.promptFeedback?.blockReason
+            ? `Response blocked by safety: ${data.promptFeedback.blockReason}`
+            : 'No candidates returned by Google AI API',
+        };
+      }
+
+      const candidate = data.candidates[0];
+      const finishReason = candidate?.finishReason;
+      const blockReason = data?.promptFeedback?.blockReason;
+      const safetyRatings = candidate?.safetyRatings || [];
+      const isSafetyBlocked =
+        finishReason === 'SAFETY' ||
+        finishReason === 'RECITATION' ||
+        Boolean(blockReason) ||
+        safetyRatings.some((r: any) => r?.blocked === true);
+
+      const parts = candidate?.content?.parts || [];
+      const textParts = parts
+        .map((p: any) => (typeof p?.text === 'string' ? p.text : ''))
+        .filter((t: string) => t);
+      const contentText = textParts.join('');
+
+      if (isSafetyBlocked && !contentText) {
+        return {
+          model: this.model,
+          content: '',
+          usage: data.usageMetadata
+            ? {
+                prompt_tokens: data.usageMetadata.promptTokenCount,
+                completion_tokens: data.usageMetadata.candidatesTokenCount,
+                total_tokens: data.usageMetadata.totalTokenCount,
+              }
+            : undefined,
+          error: `Response blocked by safety${blockReason ? `: ${blockReason}` : ''}`,
         };
       }
 
       return {
         model: this.model,
-        content: data.candidates[0]?.content?.parts?.[0]?.text || '',
+        content: contentText || '',
         usage: data.usageMetadata
           ? {
               prompt_tokens: data.usageMetadata.promptTokenCount,
