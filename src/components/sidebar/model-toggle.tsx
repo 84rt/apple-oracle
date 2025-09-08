@@ -1,19 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, Key, Plus } from 'lucide-react';
+import { Check, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MODELS } from '@/lib/constants';
 import { LLMModel } from '@/types';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface ModelToggleProps {
   enabledModels?: LLMModel[];
@@ -36,10 +30,6 @@ function ModelToggle({
     useState<LLMModel[]>(enabledModels);
 
   const [modelsWithKeys, setModelsWithKeys] = useState<Set<LLMModel>>(new Set());
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [isSavingKey, setIsSavingKey] = useState(false);
 
   // Update local state when props change
   useEffect(() => {
@@ -73,34 +63,7 @@ function ModelToggle({
     onToggleModel?.(model, !isEnabled);
   };
 
-  const handleAddKey = (model: LLMModel) => {
-    // Prefer local small modal; fallback to external handler if provided
-    if (onAddApiKey) {
-      onAddApiKey(model);
-      return;
-    }
-    setSelectedModel(model);
-    setApiKeyInput('');
-    setIsKeyModalOpen(true);
-  };
-
-  const saveApiKey = async () => {
-    if (!selectedModel || !apiKeyInput.trim()) return;
-    setIsSavingKey(true);
-    try {
-      const res = await fetch('/api/user/api-keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: selectedModel, apiKey: apiKeyInput.trim() }),
-      });
-      if (res.ok) {
-        setModelsWithKeys((prev) => new Set([...prev, selectedModel]));
-        setIsKeyModalOpen(false);
-      }
-    } finally {
-      setIsSavingKey(false);
-    }
-  };
+  // Removed inline Add Key flow; API key management is now in Settings
 
   return (
     <div className="space-y-2">
@@ -155,87 +118,19 @@ function ModelToggle({
             </div>
 
             <div className="flex items-center space-x-1">
-              {hasApiKey ? (
+              {hasApiKey && (
                 <Badge variant="secondary" className="text-xs">
                   <Key className="w-3 h-3 mr-1" />
                   API Key ✓
                 </Badge>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); handleAddKey(model); }}
-                  className="text-xs h-6 px-2"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add Key
-                </Button>
               )}
             </div>
           </div>
         );
       })}
-      <AddKeyModal
-        open={isKeyModalOpen}
-        onOpenChange={setIsKeyModalOpen}
-        model={selectedModel}
-        providerLabel={selectedModel ? MODELS[selectedModel].provider : null}
-        value={apiKeyInput}
-        onChange={setApiKeyInput}
-        onSave={saveApiKey}
-        saving={isSavingKey}
-      />
+      {null}
     </div>
   );
 }
 
 export { ModelToggle };
-
-// Inline modal for adding a single API key
-function AddKeyModal({
-  open,
-  onOpenChange,
-  model,
-  providerLabel,
-  value,
-  onChange,
-  onSave,
-  saving,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  model: LLMModel | null;
-  providerLabel: string | null;
-  value: string;
-  onChange: (v: string) => void;
-  onSave: () => void;
-  saving: boolean;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle>Add API key{providerLabel ? ` for ${providerLabel}` : ''}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Input
-            type="password"
-            placeholder={providerLabel ? `Enter your ${providerLabel} API key` : 'Enter API key'}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onSave}
-              disabled={!value.trim() || saving || !model}
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}

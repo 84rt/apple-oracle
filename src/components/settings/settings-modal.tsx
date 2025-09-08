@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ApiKeyManager } from '@/components/api-keys/api-key-manager'
 import { useTheme } from '@/contexts/theme-context'
 
 interface SettingsModalProps {
@@ -46,52 +48,37 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
+        <div className="space-y-8 py-4">
           {/* Theme Section */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <h3 className="text-sm font-medium">Appearance</h3>
-              <p className="text-xs text-muted-foreground">
-                Choose how the app looks to you
-              </p>
+              <p className="text-xs text-muted-foreground">Choose how the app looks to you</p>
             </div>
-            
-            <div className="space-y-2">
-              {themeOptions.map((option) => {
-                const Icon = option.icon
-                const isSelected = theme === option.value
-                
-                return (
-                  <Button
-                    key={option.value}
-                    variant={isSelected ? "default" : "ghost"}
-                    onClick={() => setTheme(option.value)}
-                    className="w-full justify-start h-auto p-3"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon className="h-4 w-4" />
-                      <div className="flex-1 text-left">
-                        <div className="text-sm font-medium">
-                          {option.label}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {option.description}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  </Button>
-                )
-              })}
+            <div className="max-w-xs">
+              <Select value={theme} onValueChange={(v) => setTheme(v as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            {/* Current theme indicator */}
             <div className="text-xs text-muted-foreground">
-              Currently using: {actualTheme} theme
-              {theme === 'system' && ' (from system)'}
+              Currently using: {actualTheme} theme{theme === 'system' && ' (from system)'}
             </div>
+          </div>
+
+          {/* API Keys Section */}
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-sm font-medium">API Keys</h3>
+              <p className="text-xs text-muted-foreground">Manage your model provider API keys</p>
+            </div>
+            <ApiKeyManager />
           </div>
         </div>
       </DialogContent>
