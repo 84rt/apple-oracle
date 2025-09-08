@@ -15,9 +15,11 @@ export class AnthropicProvider extends BaseLLMProvider {
         },
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022', // Using Claude 3.5 Sonnet as Claude 4 isn't available yet
-          max_tokens: request.max_tokens || 2000,
+          max_tokens: request.max_tokens ?? 512,
           messages: request.messages.filter(m => m.role !== 'system'),
           system: request.messages.find(m => m.role === 'system')?.content || '',
+          // Anthropic params to reduce chain-of-thought style reasoning exposure
+          // We keep default tool settings off and avoid thinking prompts via system
         }),
       })
 
@@ -52,10 +54,11 @@ export class AnthropicProvider extends BaseLLMProvider {
         },
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022',
-          max_tokens: request.max_tokens || 2000,
+          max_tokens: request.max_tokens ?? 512,
           messages: request.messages.filter(m => m.role !== 'system'),
           system: request.messages.find(m => m.role === 'system')?.content || '',
           stream: true,
+          // Avoid thinking-style outputs; temperature low by manager
         }),
       });
 

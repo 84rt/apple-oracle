@@ -152,12 +152,15 @@ export default function Home() {
       abortControllerRef.current.abort();
     }
     
-    // Create new abort controller for this request
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
+    // If there's no active chat, initialize it BEFORE creating a new AbortController
+    // to avoid aborting the controller we are about to use for this request.
     if (!currentChatId) {
       handleNewChat();
     }
+    
+    // Create new abort controller for this request (after potential new chat init)
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -175,8 +178,9 @@ export default function Home() {
       const systemPrompt = DEFAULT_SYSTEM_PROMPTS.find(
         (p) => p.id === selectedPromptId
       );
+      const noThinkingDirective = 'Answer immediately with the shortest correct response. Do not include analysis, chain-of-thought, or step-by-step reasoning. Output only the final answer.';
       const apiMessages = [
-        { role: 'system' as const, content: systemPrompt?.content || '' },
+        { role: 'system' as const, content: `${systemPrompt?.content || ''}\n\n${noThinkingDirective}`.trim() },
         ...(currentMode === 'continuous'
           ? messages.map((m) => ({
               role: m.role as 'user' | 'assistant',

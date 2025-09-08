@@ -55,8 +55,8 @@ export class LLMManager {
       return provider.generateResponse({
         model,
         messages,
-        temperature: 0.7,
-        max_tokens: 2000,
+        temperature: 0.2,
+        max_tokens: 512,
       });
     });
 
@@ -131,8 +131,8 @@ export class LLMManager {
         const generator = provider.generateStreamResponse({
           model,
           messages,
-          temperature: 0.7,
-          max_tokens: 2000,
+          temperature: 0.2,
+          max_tokens: 512,
           stream: true,
         });
         streamingGenerators.set(model, generator);

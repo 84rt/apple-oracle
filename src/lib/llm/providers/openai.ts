@@ -15,8 +15,8 @@ export class OpenAIProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: 'gpt-4o', // Using GPT-4o as GPT-5 isn't available yet
           messages: request.messages,
-          temperature: request.temperature || 0.7,
-          max_tokens: request.max_tokens || 2000,
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 512,
         }),
       })
 
@@ -53,8 +53,8 @@ export class OpenAIProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: modelName,
           messages: request.messages,
-          temperature: request.temperature || 0.7,
-          max_tokens: request.max_tokens || 2000,
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 512,
           stream: true,
         }),
       });
