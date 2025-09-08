@@ -41,8 +41,9 @@ export class GoogleProvider extends BaseLLMProvider {
                 }
               : undefined,
             generationConfig: {
-              temperature: request.temperature || 0.7,
-              maxOutputTokens: request.max_tokens || 2000,
+              temperature: request.temperature ?? 0.2,
+              maxOutputTokens: request.max_tokens ?? 512,
+              // Gemini: avoid reasoning tokens exposure by keeping responses short
             },
           }),
         }
@@ -127,8 +128,8 @@ export class GoogleProvider extends BaseLLMProvider {
                 }
               : undefined,
             generationConfig: {
-              temperature: request.temperature || 0.7,
-              maxOutputTokens: request.max_tokens || 2000,
+              temperature: request.temperature ?? 0.2,
+              maxOutputTokens: request.max_tokens ?? 512,
             },
           }),
         }

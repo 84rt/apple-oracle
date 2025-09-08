@@ -15,8 +15,8 @@ export class XAIProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: this.model,
           messages: request.messages,
-          temperature: request.temperature || 0.7,
-          max_tokens: request.max_tokens || 2000,
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 16,
         }),
       });
 
@@ -55,8 +55,8 @@ export class XAIProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: this.model,
           messages: request.messages,
-          temperature: request.temperature || 0.7,
-          max_tokens: request.max_tokens || 2000,
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 512,
           stream: true,
         }),
       });

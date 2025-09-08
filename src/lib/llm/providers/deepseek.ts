@@ -18,8 +18,10 @@ export class DeepSeekProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: modelName,
           messages: request.messages,
-          temperature: request.temperature || 1.0, // Default is 1.0 according to docs
-          max_tokens: request.max_tokens || 4096, // Default is 4096 according to docs
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 512,
+          // DeepSeek specific: disable reasoning outputs where possible
+          // response_format left default; no hidden thoughts returned by API
         }),
       })
 
@@ -57,8 +59,8 @@ export class DeepSeekProvider extends BaseLLMProvider {
         body: JSON.stringify({
           model: modelName,
           messages: request.messages,
-          temperature: request.temperature || 1.0,
-          max_tokens: request.max_tokens || 4096,
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 512,
           stream: true,
         }),
       });

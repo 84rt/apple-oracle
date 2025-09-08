@@ -90,12 +90,16 @@ export function ChatInterface({
               selectedId={selectedPromptId}
               onSelect={onPromptChange}
             />
+          </div>
+
+          {/* Centered Chat Mode Toggle */}
+          <div className="flex-1 flex items-center justify-center">
             <ChatModeToggle
               mode={currentMode}
               onModeChange={onModeChange}
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
               {enabledModels.length} models active
