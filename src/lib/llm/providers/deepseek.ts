@@ -32,7 +32,7 @@ export class DeepSeekProvider extends BaseLLMProvider {
       
       return {
         model: this.model,
-        content: data.choices[0]?.message?.content || '',
+        content: data.choices?.[0]?.message?.content || '',
         usage: data.usage ? {
           prompt_tokens: data.usage.prompt_tokens,
           completion_tokens: data.usage.completion_tokens,

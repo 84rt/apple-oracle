@@ -61,6 +61,10 @@ export async function POST(request: NextRequest) {
             controller.close();
           }
         },
+        cancel() {
+          // Clean up when the stream is cancelled
+          console.log('Stream cancelled, cleaning up...');
+        }
       });
 
       return new Response(stream, {

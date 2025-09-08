@@ -57,9 +57,30 @@ export class GoogleProvider extends BaseLLMProvider {
 
       const data = await response.json();
 
+      // Check for API errors in the response body
+      if (data.error) {
+        throw new Error(`Google AI API error: ${data.error.message || JSON.stringify(data.error)}`);
+      }
+
+      // Add debugging for malformed responses
+      if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+        console.warn('Google AI API returned no candidates:', data);
+        return {
+          model: this.model,
+          content: '',
+          usage: data.usageMetadata
+            ? {
+                prompt_tokens: data.usageMetadata.promptTokenCount,
+                completion_tokens: data.usageMetadata.candidatesTokenCount,
+                total_tokens: data.usageMetadata.totalTokenCount,
+              }
+            : undefined,
+        };
+      }
+
       return {
         model: this.model,
-        content: data.candidates[0]?.content?.parts[0]?.text || '',
+        content: data.candidates[0]?.content?.parts?.[0]?.text || '',
         usage: data.usageMetadata
           ? {
               prompt_tokens: data.usageMetadata.promptTokenCount,
@@ -160,7 +181,10 @@ export class GoogleProvider extends BaseLLMProvider {
               
               // Extract content from the response
               const candidate = data.candidates?.[0];
-              if (!candidate) continue;
+              if (!candidate) {
+                console.warn('Google stream chunk has no candidates:', data);
+                continue;
+              }
               
               const content = candidate.content?.parts?.[0]?.text || '';
               const finishReason = candidate.finishReason;

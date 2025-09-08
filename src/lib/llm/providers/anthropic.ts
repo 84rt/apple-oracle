@@ -29,7 +29,7 @@ export class AnthropicProvider extends BaseLLMProvider {
       
       return {
         model: this.model,
-        content: data.content[0]?.text || '',
+        content: data.content?.[0]?.text || '',
         usage: data.usage ? {
           prompt_tokens: data.usage.input_tokens,
           completion_tokens: data.usage.output_tokens,

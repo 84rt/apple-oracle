@@ -67,108 +67,116 @@ export class LLMManager {
     models: LLMModel[],
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
   ): AsyncGenerator<LLMStreamChunk, void, unknown> {
-    const generators = new Map<
-      LLMModel,
-      AsyncGenerator<LLMStreamChunk, void, unknown>
-    >();
-    const activeModels = new Set<LLMModel>();
     const nonStreamingModels = new Set<LLMModel>(['gemini-2.5-flash']); // Models that don't support streaming
-
-    // Handle non-streaming models (like Gemini Flash) separately
-    for (const model of models) {
-      if (nonStreamingModels.has(model)) {
+    const completedModels = new Set<LLMModel>();
+    
+    // Handle non-streaming models first
+    const nonStreamingPromises = models
+      .filter(model => nonStreamingModels.has(model))
+      .map(async (model) => {
         const provider = this.providers.get(model);
         if (!provider) {
-          yield {
+          return {
             model,
             content: '',
             done: true,
             error: `No API key configured for ${model}`,
           };
-          continue;
         }
 
-        // Handle non-streaming response asynchronously
-        (async () => {
-          try {
-            const response = await provider.generateResponse({
-              model,
-              messages,
-              temperature: 0.7,
-              max_tokens: 2000,
-            });
-            
-            // Convert regular response to stream chunk format
-            setTimeout(() => {
-              generators.set(model, (async function*() {
-                yield {
-                  model,
-                  content: response.content,
-                  done: true,
-                  usage: response.usage,
-                  error: response.error,
-                };
-              })());
-            }, 0);
-          } catch (error) {
-            setTimeout(() => {
-              generators.set(model, (async function*() {
-                yield {
-                  model,
-                  content: '',
-                  done: true,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                };
-              })());
-            }, 0);
-          }
-        })();
-        
-        continue;
-      }
+        try {
+          const response = await provider.generateResponse({
+            model,
+            messages,
+            temperature: 0.7,
+            max_tokens: 2000,
+          });
+          
+          return {
+            model,
+            content: response.content,
+            done: true,
+            usage: response.usage,
+            error: response.error,
+          };
+        } catch (error) {
+          return {
+            model,
+            content: '',
+            done: true,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
+        }
+      });
 
-      // Handle streaming models normally
+    // Handle streaming models
+    const streamingModels = models.filter(model => !nonStreamingModels.has(model));
+    const streamingGenerators = new Map<LLMModel, AsyncGenerator<LLMStreamChunk, void, unknown>>();
+    
+    for (const model of streamingModels) {
       const provider = this.providers.get(model);
       if (!provider) {
+        // Handle missing provider immediately
         yield {
           model,
           content: '',
           done: true,
           error: `No API key configured for ${model}`,
         };
+        completedModels.add(model);
         continue;
       }
 
-      const generator = provider.generateStreamResponse({
-        model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 2000,
-        stream: true,
-      });
-      generators.set(model, generator);
-      activeModels.add(model);
+      try {
+        const generator = provider.generateStreamResponse({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: true,
+        });
+        streamingGenerators.set(model, generator);
+      } catch (error) {
+        yield {
+          model,
+          content: '',
+          done: true,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+        completedModels.add(model);
+      }
     }
 
-    // Stream responses from all models concurrently
-    while (activeModels.size > 0 || generators.size > activeModels.size) {
-      // Check for new generators from non-streaming models
-      const allModelGenerators = Array.from(generators.keys());
-      const newGenerators = allModelGenerators.filter(model => 
-        !activeModels.has(model) && generators.has(model)
-      );
-      
-      for (const model of newGenerators) {
-        activeModels.add(model);
+    // Yield non-streaming results as they complete
+    const nonStreamingResults = await Promise.allSettled(nonStreamingPromises);
+    for (const result of nonStreamingResults) {
+      if (result.status === 'fulfilled') {
+        yield result.value;
+        completedModels.add(result.value.model);
       }
-      
-      if (activeModels.size === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        continue;
-      }
+    }
 
-      const promises = Array.from(activeModels).map(async (model) => {
-        const generator = generators.get(model);
+    // Stream from streaming models
+    const activeStreamingModels = new Set(streamingGenerators.keys());
+    const startTime = Date.now();
+    const maxTimeout = 30000; // 30 seconds timeout
+    
+    while (activeStreamingModels.size > 0) {
+      // Check for timeout to prevent infinite loops
+      if (Date.now() - startTime > maxTimeout) {
+        console.warn('Streaming timeout reached, cleaning up remaining generators');
+        for (const model of activeStreamingModels) {
+          yield {
+            model,
+            content: '',
+            done: true,
+            error: 'Streaming timeout - response took too long',
+          };
+        }
+        break;
+      }
+      const promises = Array.from(activeStreamingModels).map(async (model) => {
+        const generator = streamingGenerators.get(model);
         if (!generator) return null;
         
         try {
@@ -197,7 +205,10 @@ export class LLMManager {
           const { model, result } = promiseResult.value;
 
           if (result.done) {
-            activeModels.delete(model);
+            activeStreamingModels.delete(model);
+            completedModels.add(model);
+            // Clean up the generator
+            streamingGenerators.delete(model);
             if (result.value) {
               yield result.value;
             }
@@ -208,10 +219,13 @@ export class LLMManager {
       }
 
       // Small delay to prevent overwhelming the system
-      if (activeModels.size > 0) {
+      if (activeStreamingModels.size > 0) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
+
+    // Clean up any remaining generators
+    streamingGenerators.clear();
   }
 
   hasProvider(model: LLMModel): boolean {
