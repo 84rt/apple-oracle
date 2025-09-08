@@ -6,7 +6,7 @@ import { ChatInterface } from '@/components/chat/chat-interface';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Chat, Message, SystemPrompt, LLMModel, ModelResponse } from '@/types';
 import { generateChatTitle } from '@/lib/utils';
-import { DEFAULT_SYSTEM_PROMPTS } from '@/lib/constants';
+import { DEFAULT_SYSTEM_PROMPTS, MODELS } from '@/lib/constants';
 
 export default function Home() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -32,16 +32,41 @@ export default function Home() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
-  // Load enabled models from localStorage on mount
+  // Load enabled models from localStorage on mount (and sanitize)
   useEffect(() => {
     const savedModels = localStorage.getItem('enabledModels');
-    if (savedModels) {
-      try {
-        const parsed = JSON.parse(savedModels) as LLMModel[];
-        setEnabledModels(parsed);
-      } catch (error) {
-        console.error('Failed to parse saved models:', error);
+    if (!savedModels) return;
+
+    try {
+      const parsed = JSON.parse(savedModels) as string[];
+
+      // Map legacy/unknown model names to current supported ones
+      const legacyMap: Record<string, LLMModel> = {
+        'gemini-2.5-pro': 'gemini-2.5-flash',
+      };
+
+      const allowedModels = new Set(Object.keys(MODELS) as LLMModel[]);
+
+      const sanitized = Array.from(
+        new Set(
+          parsed
+            .map((m) => (legacyMap[m] ? legacyMap[m] : (m as LLMModel)))
+            .filter((m): m is LLMModel => allowedModels.has(m as LLMModel))
+        )
+      );
+
+      // If the sanitized list differs, persist the fix
+      const original = JSON.stringify(parsed);
+      const fixed = JSON.stringify(sanitized);
+      if (original !== fixed) {
+        localStorage.setItem('enabledModels', fixed);
       }
+
+      if (sanitized.length > 0) {
+        setEnabledModels(sanitized);
+      }
+    } catch (error) {
+      console.error('Failed to parse saved models:', error);
     }
   }, []);
 
