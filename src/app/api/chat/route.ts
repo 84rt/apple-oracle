@@ -45,14 +45,31 @@ export async function POST(request: NextRequest) {
 
         if (rows && Array.isArray(rows)) {
           for (const row of rows as Array<{ model: LLMModel; encrypted_key: string; is_active: boolean }>) {
-            // Note: In a production setup, this would be a decrypted value via Vault.
-            // Here we assume the selected value is usable for provider auth.
-            mergedApiKeys[row.model] = row.encrypted_key || mergedApiKeys[row.model];
+            // Defensive: only override if the stored value looks like a real key (not masked) and is non-empty
+            const candidate = (row.encrypted_key || '').trim();
+            const looksMasked = candidate.includes('****');
+            const looksValidFormat = candidate.length >= 20; // rough sanity check
+
+            if (candidate && !looksMasked && looksValidFormat) {
+              mergedApiKeys[row.model] = candidate;
+            }
           }
         }
       } catch (e) {
         // If fetching user keys fails, we silently fall back to env/client-provided keys
         console.warn('Failed to load user API keys, falling back to env keys');
+      }
+    }
+
+    // Final sanity: trim keys and avoid obviously invalid placeholders
+    for (const key of Object.keys(mergedApiKeys) as LLMModel[]) {
+      const value = mergedApiKeys[key];
+      if (!value) continue;
+      const trimmed = value.trim();
+      if (!trimmed || trimmed.includes('****')) {
+        delete mergedApiKeys[key];
+      } else {
+        mergedApiKeys[key] = trimmed;
       }
     }
 
