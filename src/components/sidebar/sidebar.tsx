@@ -9,6 +9,8 @@ import { ModelToggle } from './model-toggle';
 import { ChatHistory } from './chat-history';
 import { UserMenu } from './user-menu';
 import { LLMModel } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { MODELS } from '@/lib/constants';
 
 interface SidebarProps {
   chats: Chat[];
@@ -77,7 +79,33 @@ export function Sidebar({
 
           {/* Model Toggles */}
           <div className="py-12 px-4">
-            <h3 className="text-sm font-medium mb-3">Active Models</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Active Models</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {enabledModels?.length || 0} active
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    const allModels = Object.keys(MODELS) as LLMModel[];
+                    const allSelected = (enabledModels?.length || 0) === allModels.length;
+                    // Toggle only when change is needed to avoid duplicates
+                    const enabledSet = new Set(enabledModels || []);
+                    allModels.forEach((model) => {
+                      const shouldEnable = !allSelected;
+                      const isEnabled = enabledSet.has(model);
+                      if (shouldEnable && !isEnabled) onToggleModel?.(model, true);
+                      if (!shouldEnable && isEnabled) onToggleModel?.(model, false);
+                    });
+                  }}
+                >
+                  {(enabledModels?.length || 0) === Object.keys(MODELS).length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+            </div>
             <ModelToggle
               enabledModels={enabledModels}
               onToggleModel={onToggleModel}

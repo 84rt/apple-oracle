@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Settings2, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Send, Settings2, Plus, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
@@ -55,7 +55,7 @@ export function ChatInterface({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
+    if (!input.trim() || isLoading || enabledModels.length === 0) return
 
     onSendMessage(input.trim())
     setInput('')
@@ -81,15 +81,24 @@ export function ChatInterface({
                 size="icon"
                 onClick={onToggleSidebar}
                 className="hidden md:flex"
+                aria-label={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
               >
-                {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                {isSidebarCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4" />
+                )}
               </Button>
             )}
-            <SystemPromptSelector
-              prompts={systemPrompts}
-              selectedId={selectedPromptId}
-              onSelect={onPromptChange}
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNewChat}
+              className="border-2"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Chat
+            </Button>
           </div>
 
           {/* Centered Chat Mode Toggle */}
@@ -101,18 +110,11 @@ export function ChatInterface({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {enabledModels.length} models active
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNewChat}
-              className="border-2"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Chat
-            </Button>
+            <SystemPromptSelector
+              prompts={systemPrompts}
+              selectedId={selectedPromptId}
+              onSelect={onPromptChange}
+            />
           </div>
         </div>
       </div>
@@ -180,7 +182,7 @@ export function ChatInterface({
               type="submit"
               size="icon"
               className="absolute bottom-2 right-2"
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || enabledModels.length === 0}
             >
               <Send className="w-4 h-4" />
             </Button>

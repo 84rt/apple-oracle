@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, models, apiKeys, stream } = await request.json();
+    const { messages, models, apiKeys } = await request.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -58,51 +58,7 @@ export async function POST(request: NextRequest) {
 
     const llmManager = new LLMManager(mergedApiKeys);
 
-    // Handle streaming responses
-    if (stream) {
-      const encoder = new TextEncoder();
-
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            for await (const chunk of llmManager.generateStreamResponses(
-              models as LLMModel[],
-              messages
-            )) {
-              const data = `data: ${JSON.stringify(chunk)}\n\n`;
-              controller.enqueue(encoder.encode(data));
-            }
-
-            // Send final done message
-            const doneData = `data: [DONE]\n\n`;
-            controller.enqueue(encoder.encode(doneData));
-            controller.close();
-          } catch (error) {
-            console.error('Streaming error:', error);
-            const errorData = `data: ${JSON.stringify({
-              error: 'Streaming error occurred',
-              done: true,
-            })}\n\n`;
-            controller.enqueue(encoder.encode(errorData));
-            controller.close();
-          }
-        },
-        cancel() {
-          // Clean up when the stream is cancelled
-          console.log('Stream cancelled, cleaning up...');
-        }
-      });
-
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
-    }
-
-    // Handle non-streaming responses (fallback)
+    // Always handle non-streaming responses
     const responses = await llmManager.generateResponses(
       models as LLMModel[],
       messages

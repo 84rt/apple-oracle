@@ -24,7 +24,7 @@ export default function Home() {
   );
   const [systemPrompts] = useState<SystemPrompt[]>([]);
   const [selectedPromptId, setSelectedPromptId] =
-    useState<string>('normal-mode');
+    useState<string>('apple-oracle');
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
@@ -190,11 +190,11 @@ export default function Home() {
         { role: 'user' as const, content },
       ];
 
-      // Check if we have any non-streaming models
-      const nonStreamingModels = ['gemini-2.5-flash'];
-      const hasNonStreamingModels = enabledModels.some(model => nonStreamingModels.includes(model));
-      const streamingModels = enabledModels.filter(model => !nonStreamingModels.includes(model));
-      const nonStreamingOnly = enabledModels.filter(model => nonStreamingModels.includes(model));
+      // Treat all models as non-streaming
+      const nonStreamingModels = enabledModels;
+      const hasNonStreamingModels = nonStreamingModels.length > 0;
+      const streamingModels: LLMModel[] = [];
+      const nonStreamingOnly = enabledModels;
 
       // Initialize responses for ALL models with loading state
       const initialResponses: ModelResponse[] = enabledModels.map((model) => ({
@@ -202,7 +202,7 @@ export default function Home() {
         message_id: userMessage.id,
         model,
         content: '',
-        status: nonStreamingModels.includes(model) ? 'pending' as const : 'streaming' as const,
+        status: 'pending' as const,
         created_at: new Date().toISOString(),
       }));
 
@@ -215,7 +215,7 @@ export default function Home() {
         )
       );
 
-      // Handle non-streaming models first (like Gemini Flash)
+      // Handle non-streaming models (all models)
       if (hasNonStreamingModels) {
         const nonStreamingResponse = await fetch('/api/chat', {
           method: 'POST',
@@ -226,7 +226,8 @@ export default function Home() {
             messages: apiMessages,
             models: nonStreamingOnly,
             apiKeys: {}, // User would provide their own API keys
-            stream: false, // Disable streaming for these models
+            // stream flag is ignored by API now; provided for compatibility
+            stream: false,
           }),
         });
 
@@ -260,129 +261,7 @@ export default function Home() {
         }
       }
 
-      // Handle streaming models if any
-      if (streamingModels.length === 0) {
-        // No streaming models, we're done
-        return;
-      }
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: apiMessages,
-          models: streamingModels, // Only streaming models
-          apiKeys: {}, // User would provide their own API keys
-          stream: true, // Enable streaming
-        }),
-        signal: abortController.signal, // Add abort signal
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get responses');
-      }
-
-      // Streaming models are already initialized above, no need to re-initialize
-
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        throw new Error('No response body');
-      }
-      
-      // Store reader reference for cleanup
-      streamReaderRef.current = reader;
-
-      let buffer = '';
-      const modelContents = new Map<LLMModel, string>();
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed === '' || trimmed === 'data: [DONE]') continue;
-            if (!trimmed.startsWith('data: ')) continue;
-
-            try {
-              const data = JSON.parse(trimmed.slice(6));
-
-              if (data.error) {
-                // Handle error chunk
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === userMessage.id && msg.model_responses
-                      ? {
-                          ...msg,
-                          model_responses: msg.model_responses.map((resp) =>
-                            resp.model === data.model
-                              ? {
-                                  ...resp,
-                                  status: 'error' as const,
-                                  error_message: data.error,
-                                  content: modelContents.get(data.model) || '',
-                                }
-                              : resp
-                          ),
-                        }
-                      : msg
-                  )
-                );
-                continue;
-              }
-
-              // Update content for this model
-              const currentContent = modelContents.get(data.model) || '';
-              const newContent = currentContent + data.content;
-              modelContents.set(data.model, newContent);
-
-              // Update the message with new content
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === userMessage.id && msg.model_responses
-                    ? {
-                        ...msg,
-                        model_responses: msg.model_responses.map((resp) =>
-                          resp.model === data.model
-                            ? {
-                                ...resp,
-                                content: newContent,
-                                status: data.done
-                                  ? ('completed' as const)
-                                  : ('streaming' as const),
-                                token_count: data.usage?.total_tokens,
-                              }
-                            : resp
-                        ),
-                      }
-                    : msg
-                )
-              );
-            } catch (parseError) {
-              console.warn('Failed to parse streaming chunk:', parseError);
-            }
-          }
-        }
-      } finally {
-        // Clean up reader
-        try {
-          reader.releaseLock();
-        } catch (error) {
-          // Reader might already be released
-          console.warn('Reader cleanup error:', error);
-        }
-        streamReaderRef.current = null;
-      }
+      // No streaming step; all models handled above
 
       // Update chat title if this is the first message
       if (messages.length === 0) {
